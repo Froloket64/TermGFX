@@ -16,7 +16,7 @@ Draw
 # Installation
 ## Prerequisites
 In order to use the package, you need **Python 3**
-+ Python (3.6+)*
++ Python (3.6+)* (Some examples use 3.10, though)
 
 \* If incorrect, please report _(too lazy to figure out actual range of versions needed)_
 
