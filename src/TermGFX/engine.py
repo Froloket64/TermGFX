@@ -12,6 +12,12 @@ RL_CORNER = "┘"
 Pos = tuple[int, int] | list[int, int]
 Size = Pos
 
+# Exceptions
+class EngineError(Exception):
+    pass
+
+# Classes
+# Graphics canvas
 class Canvas:
     def __init__(self,
                 size: Size,
@@ -79,9 +85,8 @@ class Canvas:
 def get_escape():
     if os.name == "posix":
         return "\033"
-
-    ...
-
+    else:
+        raise EngineError("No support for Windows for now :(")
 
 # Return a cursor moving escape sequence (to be printed)
 def cursor_move(pos: Pos):
