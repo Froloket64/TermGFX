@@ -5,7 +5,7 @@ in Python
 """
 
 ## Imports
-from TermGFX.engine import Canvas
+from TermGFX.engine import Canvas, cursor_move
 from time import sleep
 import itertools
 
