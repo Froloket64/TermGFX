@@ -92,6 +92,6 @@ while running:
         alive_cells.remove(cell)
 
     canvas.draw()
-    print(cursor_move((0, canvas.size[1]+1)) + "Cells:", len(cells))
+    print("Cells:", len(cells))
 
     sleep(frame)

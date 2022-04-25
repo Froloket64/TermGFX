@@ -63,11 +63,14 @@ class Canvas:
 
 
     # Draw the canvas on the screen (terminal)
-    def draw(self):
+    def draw(self, return_at_bottom: bool = True):
         for pos, char in self.changes.items():
             self.chars[pos[1]][pos[0]] = char
 
             print(cursor_move(pos) + char, end="")
+
+            if return_at_bottom:
+                print(cursor_move((0, self.size[1])))
 
         # Clear the changes list (dict)
         self.changes = {}
