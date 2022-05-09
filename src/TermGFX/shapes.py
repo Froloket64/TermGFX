@@ -3,6 +3,8 @@ Different shape implementations
 to be used with the engine
 """
 
+import math
+
 ## Types
 Size = tuple[int, int]
 Pos = tuple[int, int]
@@ -33,10 +35,11 @@ class BaseRect:
             len(self.rect)
         )
 
-    @property
     def get_rect(self):
         return self.rect
 
+    def set_pixel(self, pos: Pos, char: str):
+        self.rect[pos[1]][pos[0]] = char
 
     def draw(self, surface, pos: Pos = (0, 0)):
         assert not any(
@@ -59,176 +62,124 @@ class FilledRect(BaseRect):
 
         self.char = char
 
-        self.rect = tuple(tuple(self.char for _ in range(size[0])) for _ in range(size[1]))
+        self.rect = list(list(self.char for _ in range(size[0])) for _ in range(size[1]))
 
 
 # Class representing lines
 class Line(BaseRect):
     def __init__(self, start: Pos, end: Pos, char: str, algorithm: str = "custom"):
-        assert algorithm in ("custom", "dda"), "Unknown algorighm"
+        assert algorithm in ("custom", "bresenham"), "Unknown algorighm"
 
         self.char = char
+        self.rect_size = tuple(map(max, ((start[0], end[0]), (start[1], end[1]))))
+
         exec(f"self.rect = self._construct_{algorithm}(start, end, char)")
 
+    # A yet another implementation...
+    def _construct_custom(self, start: Pos, end: Pos, char: str):
+        """
+        y = mx + b
+        """
 
-    # Draw a line using starting and ending positions [My custom algorihtm]
-    @staticmethod
-    def _construct_custom(start: Pos, end: Pos, char: str, rect: Rect | None = None) -> Rect:
-        # Assertions
-        assert start != end, "Must be not a dot"
+        # Prepare a rect to draw on and return later
+        # rect = FilledRect(self.rect_size, " ")
+        rect = FilledRect(list(map(lambda x: x + 10, self.rect_size)), " ")
 
-        # Calculate travels
-        dirs = "xy"
+        # Calculate `m` (slope) using `b` equality
+        """ Reference:
+        { y1 = x1m + b
+        { y2 = x2m + b
 
-        distances_raw = tuple(map(lambda l: l[1] - l[0], zip(start, end)))
+        { b = y1 - x1m
+        { b = y2 - x2m
 
-        distances = {
-            distances_raw[0]: "x",
-            distances_raw[1]: "y"
-        }
+        y1 - x1m = y2 - x2m
 
-        # Find the farthest one
-        latest = tuple(distances.items())[0]
-        for travel, dir in distances.items():
-            if abs(travel) > abs(latest[0]):
-                farthest = travel, dir
-                shortest = latest
-            else:
-                farthest = latest
-                shortest = travel, dir
+        y1 - y2 = x1m - x2m = m(x1 - x2)
 
-            latest = travel, dir
+        m = (y1 - y2) / (x1 - x2) (= (y2 - y1) / (x2 - x1), since the signs are mirrored)
+        """
 
-        # Calculate the steps
-        if farthest[0] > 0:
-            step_farthest = 1
-        elif farthest[0] < 0:
-            step_farthest = 1
+        m = (end[1] - start[1]) // (end[0] - start[0])
+
+        # Draw the initial point (`start`)
+        rect.rect[start[1]][start[0]] = char
+
+        # FIXME
+        x, y = start
+        if abs(m) < 1:
+            while (x, y) != end:
+                x += int(math.copysign(1, m))
+                y = x//abs(m)
+
+                rect.rect[y][x] = char
         else:
-            step_farthest = 0
+            while (x, y) != end:
+                x = y//abs(m)
+                y += int(math.copysign(1, m))
 
-        if shortest[0] > 0:
-            step_shortest = 1
-        elif shortest[0] < 0:
-            step_shortest = 1
-        else:
-            step_shortest = 0
+                rect.rect[y][x] = char
 
-        if shortest == farthest:
-            shortest = farthest[0], dirs[dirs.index(farthest[1]) - 1]
-
-        shortest_fraction = 1/farthest[0]  # FIXME: Division by zero
-        move_at = 1/(abs(shortest[0]) + 1)
-
-        # Actual line building
-        if not rect:
-            rect = [[" " for _ in range(abs(distances_raw[0]) + 1)] for _ in range(abs(distances_raw[1]) + 1)]
-
-        pos = {
-            "x": start[0],
-            "y": start[1]
-        }
-        shortest_partial = 0
-
-        while pos[farthest[1]] != end[dirs.index(farthest[1])]:
-            rect[pos["y"]][pos["x"]] = char
-
-            pos[farthest[1]] += step_farthest
-            shortest_partial += shortest_fraction
-
-            if shortest_partial >= move_at:
-                shortest_partial = 0
-                pos[shortest[1]] += step_shortest
-
-        # Finish by drawing on `end` coordinate
-        rect[end[1]][end[0]] = char
+        return rect.rect
 
 
-        return rect
+    def _construct_bresenham(self, start: Pos, end: Pos, char: str):
+        # Reference: https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 
-
-    # Draw the line using DDA algorithm
-    @staticmethod
-    def _construct_dda(start: Pos, end: Pos, char: str, rect: Rect | None = None) -> Rect:
-        '''
-        # D = delta
-        m = Dy / Dx
-
-        steps = max(Dx, Dy)
-
-        x_k+1, y_k+1 = {
-            (
-                x_k + 1,
-                y_k + m
-            ), m < 1
-            (
-                x_k + 1 / m,
-                y_k + 1
-            ), m > 1
-            (
-                x_k + 1,
-                y_k + 1
-            ), m = 1
-        } (repeat `steps` times)
-        '''
-
-        distances = {
+        # Calculate the deltas for each coordinate
+        delta = {
             "x": end[0] - start[0],
             "y": end[1] - start[1]
         }
 
-        if not rect:
-            # rect = [[" " for _ in range(abs(distances["x"]) + 1)] for _ in range(abs(distances["y"]) + 1)]
-            rect = [[" " for _ in range(10)] for _ in range(10)]
+        # Prepare a Rect to be filled
+        rect = FilledRect(list(map(lambda x: x + 10, self.rect_size)), " ")
 
-        if not any([a == 0 for a in distances.values()]):
-            # m = round(distances["y"] / distances["x"] + 0.01)
-            m = distances["y"] / distances["x"]
-            print(m)
+        if delta["x"] > delta["y"]:
+            # Calculate the error (doubled, for int arithmetic)
+            error = 2 * delta["y"] - delta["x"]
 
-            steps = max(distances.values())
+            y = start[1]
 
-            pos = {
-                "x": start[0],
-                "y": start[1]
-            }
+            for x in range(start[0], end[0]+1):
+                # Plot the resulting pixel
+                rect.set_pixel((x, y), char)
 
-            old_pos = {
-                "x": 0,
-                "y": 0
-            }
+                # If the error is positive
+                if error > 0:
+                    # Increment `y`
+                    y += 1
 
-            # Actual line building
-            for _ in range(steps):
-                rect[pos["y"]][pos["x"]] = char
+                    # And subtract 2dx from the error
+                    error -= 2 * delta["x"]
 
-                print(pos)
+                # Increase error by 2dy
+                error += 2 * delta["y"]
+        else:  # Swap the coordinates
+            # Calculate the error (doubled, for int arithmetic)
+            error = 2 * delta["x"] - delta["y"]
 
-                if abs(m) <= 1:
-                    pos["x"] += 1
-                    pos["y"] += round(m)
-                else:
-                    pos["x"] += round(1/m)
-                    pos["y"] += 1
+            x = start[0]
 
+            for y in range(start[1], end[1]+1):
+                # Plot the resulting pixel
+                rect.set_pixel((x, y), char)
 
-            rect[end[1]][end[0]] = char
+                # If the error is positive
+                if error > 0:
+                    # Increment `x`
+                    x += 1
 
-        else:
-            new_distances = {value: key for key, value in distances.items()}
-            non_zero = list(filter(lambda x: x, distances.values()))
-            non_zero.append(new_distances[non_zero[0]])
+                    # And subtract 2dx from the error
+                    error -= 2 * delta["y"]
 
-            for i in range(non_zero[0]):
-                if non_zero[1] == "x":
-                    rect[0][i] = char
-                else:
-                    rect[i][0] = char
+                # Increase error by 2dy
+                error += 2 * delta["x"]
 
-        return rect
+        return rect.get_rect()
 
 
-class Shape(Line):
+class Shape(Line):  # FIXME
     def __init__(self, *vertices: Pos, char: str, algorithm: str = "custom"):
         assert len(vertices) >= 3, "At least 3 vertices should be supplied"
         assert vertices[0] != vertices[-1], "Starting vertex shouldn't be repeated in the end"
