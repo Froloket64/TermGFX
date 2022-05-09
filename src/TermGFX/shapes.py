@@ -11,6 +11,10 @@ Pos = tuple[int, int]
 Rect = tuple[tuple[str]] | list[list[str]]
 
 
+## Defs
+BLOCK_CURSOR = "█"
+
+
 ## Classes
 # A base class for all other shapes
 class BaseRect:
@@ -57,7 +61,7 @@ class BaseRect:
 
 # A rectangular area filled with a single char
 class FilledRect(BaseRect):
-    def __init__(self, size: Size, char: str):
+    def __init__(self, size: Size, char: str = BLOCK_CURSOR):
         assert len(char) == 1, "You can pass only a single char"
 
         self.char = char
@@ -67,7 +71,7 @@ class FilledRect(BaseRect):
 
 # Class representing lines
 class Line(BaseRect):
-    def __init__(self, start: Pos, end: Pos, char: str, algorithm: str = "custom"):
+    def __init__(self, start: Pos, end: Pos, char: str = BLOCK_CURSOR, algorithm: str = "custom"):
         assert algorithm in ("custom", "bresenham"), "Unknown algorighm"
 
         self.char = char
@@ -123,7 +127,7 @@ class Line(BaseRect):
         return rect.rect
 
 
-    def _construct_bresenham(self, start: Pos, end: Pos, char: str):
+    def _construct_bresenham(self, start: Pos, end: Pos, char: str = BLOCK_CURSOR):
         # Reference: https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 
         # Calculate the deltas for each coordinate
@@ -180,7 +184,7 @@ class Line(BaseRect):
 
 
 class Shape(Line):  # FIXME
-    def __init__(self, *vertices: Pos, char: str, algorithm: str = "custom"):
+    def __init__(self, *vertices: Pos, char: str = BLOCK_CURSOR, algorithm: str = "custom"):
         assert len(vertices) >= 3, "At least 3 vertices should be supplied"
         assert vertices[0] != vertices[-1], "Starting vertex shouldn't be repeated in the end"
 
