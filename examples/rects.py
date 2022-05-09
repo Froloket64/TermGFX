@@ -13,7 +13,7 @@ rect1 = BaseRect((
     list("kek")
 ))
 
-rect2 = FilledRect((5, 4), "█")
+rect2 = FilledRect((5, 4))
 
 
 # Main

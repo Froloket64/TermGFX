@@ -9,8 +9,7 @@ canvas = Canvas(window_size)
 tri = Shape(
     (20, 0),
     (18, 2),
-    (22, 2),
-    char="█"
+    (22, 2)
 )
 
 tri.draw(canvas)
