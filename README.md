@@ -1,15 +1,17 @@
 TermGFX
 -------
 
-A yet another terminal graphics written in Python.
+A yet another terminal graphics library written in Python.
+
+# Why tho?
+The idea behind this project is to allow simple yet extensible graphics processing in the terminal. I'm a videogames enjoyer and I have used libraries such as PyGame, so it was an inspiration for me to write my own graphics lib. I decided using a terminal/TTY as canvas, because I spend a lot of time sitting at it as a Linux user. Moreover, it felt like something a bit more unique ~~(even though there were a bunch of such project already, shh)~~
 
 # What it can
 Draw
 + **Dots** 
-+ **Lines** (poorly, for now) 
++ **Lines**
 
 # What's planned
-+ Adequate **Line** drawing
 + **Cirle** shapes
 + **Arbitrary** shapes (with straight sides)
 
@@ -25,6 +27,7 @@ You can use `pip` or `pip3` to install **TermGFX** by executing
 ``` sh
 pip --user install termgfx
 ```
+**Note:** you can omit `--user`, but it's not recommended (see [why][https://stackoverflow.com/questions/42988977/what-is-the-purpose-of-pip-install-user])
 
 ## From source
 The source code is located in `<project root>/src/TermGFX/`, so, in order to use it, you might just copy the file onto yout project directory, though it's not recommended (`pip` is a better option)
