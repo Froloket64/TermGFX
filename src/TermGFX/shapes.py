@@ -3,6 +3,9 @@ Different shape implementations
 to be used with the engine
 """
 
+from engine import paint
+from engine import Canvas
+
 import math
 
 ## Types
@@ -11,26 +14,28 @@ Pos = tuple[int, int]
 Rect = tuple[tuple[str]] | list[list[str]]
 
 
-## Defs
+## Defaults
 BLOCK_CURSOR = "█"
+WHITE = "#ffffff"
 
 
 ## Classes
 # A base class for all other shapes
 class BaseRect:
-    def __init__(self, chars: tuple[tuple[str]]):
+    def __init__(self, chars: tuple[tuple[str]], color=WHITE):
         assert max(map(len, chars)) == min(map(len, chars)), "All columns should be the same size"
 
         self.rect = chars
+        self.color = color
 
 
     def __str__(self):
         sep = "\n  "  # As for Python 3.10, \'es are not supported in f-strings
 
         return f"""{type(self).__name__}(
-  {sep.join(["".join(line) for line in self.rect])}
+  {sep.join(["".join(line) for line in self.rect])},
+color = {self.color}
 )"""
-
 
     @property
     def size(self):
@@ -43,7 +48,7 @@ class BaseRect:
         return self.rect
 
     def set_pixel(self, pos: Pos, char: str):
-        self.rect[pos[1]][pos[0]] = char
+        self.rect[pos[1]][pos[0]] = paint(char, self.color)
 
     def draw(self, surface, pos: Pos = (0, 0)):
         assert not any(
@@ -55,26 +60,28 @@ class BaseRect:
 
         for y, line in enumerate(self.rect):
             for x, char in enumerate(line):
-                if char != " ":
+                if char != paint(" ", self.color):  # " " imitates alpha/transparent pixels
                     surface.set((x + pos[0], y + pos[1]), char)
 
 
 # A rectangular area filled with a single char
 class FilledRect(BaseRect):
-    def __init__(self, size: Size, char: str = BLOCK_CURSOR):
+    def __init__(self, size: Size, char: str = BLOCK_CURSOR, color=WHITE):
         assert len(char) == 1, "You can pass only a single char"
 
-        self.char = char
+        self.char = paint(char, color)
+        self.color = color
 
         self.rect = list(list(self.char for _ in range(size[0])) for _ in range(size[1]))
 
 
 # Class representing lines
 class Line(BaseRect):
-    def __init__(self, start: Pos, end: Pos, char: str = BLOCK_CURSOR, algorithm: str = "custom"):
+    def __init__(self, start: Pos, end: Pos, char: str = BLOCK_CURSOR, color=WHITE, algorithm: str = "bresenham"):
         assert algorithm in ("custom", "bresenham"), "Unknown algorighm"
 
         self.char = char
+        self.color = color
         self.rect_size = tuple(map(max, ((start[0], end[0]), (start[1], end[1]))))
 
         exec(f"self.rect = self._construct_{algorithm}(start, end, char)")
@@ -107,7 +114,7 @@ class Line(BaseRect):
         m = (end[1] - start[1]) // (end[0] - start[0])
 
         # Draw the initial point (`start`)
-        rect.rect[start[1]][start[0]] = char
+        rect.rect[start[1]][start[0]] = paint(char, self.color)
 
         # FIXME
         x, y = start
@@ -116,16 +123,15 @@ class Line(BaseRect):
                 x += int(math.copysign(1, m))
                 y = x//abs(m)
 
-                rect.rect[y][x] = char
+                rect.rect[y][x] = paint(char, self.color)
         else:
             while (x, y) != end:
                 x = y//abs(m)
                 y += int(math.copysign(1, m))
 
-                rect.rect[y][x] = char
+                rect.rect[y][x] = paint(char, self.color)
 
         return rect.rect
-
 
     def _construct_bresenham(self, start: Pos, end: Pos, char: str = BLOCK_CURSOR):
         # Reference: https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
@@ -137,7 +143,7 @@ class Line(BaseRect):
         }
 
         # Prepare a Rect to be filled
-        rect = FilledRect(list(map(lambda x: x + 10, self.rect_size)), " ")
+        rect = FilledRect(list(map(lambda x: x+1, self.rect_size)), " ", self.color)
 
         if delta["x"] > delta["y"]:
             # Calculate the error (doubled, for int arithmetic)
@@ -149,7 +155,6 @@ class Line(BaseRect):
                 # Plot the resulting pixel
                 rect.set_pixel((x, y), char)
 
-                # If the error is positive
                 if error > 0:
                     # Increment `y`
                     y += 1
@@ -160,32 +165,27 @@ class Line(BaseRect):
                 # Increase error by 2dy
                 error += 2 * delta["y"]
         else:  # Swap the coordinates
-            # Calculate the error (doubled, for int arithmetic)
             error = 2 * delta["x"] - delta["y"]
 
             x = start[0]
 
             for y in range(start[1], end[1]+1):
-                # Plot the resulting pixel
                 rect.set_pixel((x, y), char)
 
-                # If the error is positive
                 if error > 0:
-                    # Increment `x`
                     x += 1
 
-                    # And subtract 2dx from the error
                     error -= 2 * delta["y"]
 
-                # Increase error by 2dy
                 error += 2 * delta["x"]
+
 
         return rect.get_rect()
 
 
 class Shape(Line):  # FIXME
-    def __init__(self, *vertices: Pos, char: str = BLOCK_CURSOR, algorithm: str = "custom"):
-        assert len(vertices) >= 3, "At least 3 vertices should be supplied"
+    def __init__(self, *vertices: Pos, char: str = BLOCK_CURSOR, color=WHITE, algorithm: str = "bresenham"):
+        assert len(vertices) >= 3, "At least 3 vertices should be supplied, otherwise try `shapes.Line`"
         assert vertices[0] != vertices[-1], "Starting vertex shouldn't be repeated in the end"
 
         self.vertices = tuple(zip(vertices, vertices[1:] + vertices[:1]))

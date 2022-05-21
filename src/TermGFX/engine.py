@@ -78,9 +78,6 @@ class Canvas:
 
     # Set a "pixel" to a specified value
     def set(self, pos: Pos, char: str):
-        assert len(char) == 1, "Can only set single chars at a time"
-
-        # self.chars[pos[1]][pos[0]] = char
         self.changes.update({(pos[0], pos[1]): char})
 
 
@@ -91,11 +88,48 @@ def get_escape():
     else:
         raise EngineError("No support for Windows for now :(")
 
+# Return a color escape sequence from RGB/HEX color code
+def color_seq(value, mode="hex"):
+    assert mode in ("rgb", "hex"), f"Unknown color mode: {mode}"
+
+    ESC = get_escape()
+
+    if mode == "hex":
+        value = value.strip("#")
+        colors = []
+
+        HEX_LEN = 6
+
+        for i in range(0, HEX_LEN, 2):
+            color = int(value[i:i+2], 16)  # Str representing a color band in HEX
+
+            colors.append(str(color))  # Convert the value to decimal
+    else:
+        assert len(value) == 3, "RGB values should contain 3 exactly bands"
+
+        colors = map(str, value)
+
+    seq = f"{ESC}[38;2;{';'.join(colors)}m"
+
+    return seq
+
+# Return a provided message colored using escape sequences
+def paint(msg, color, mode="hex"):
+    ESC = get_escape()
+    CLEAR = f"{ESC}[0m"  # Sequence to clear color
+
+    # Transform a color encoding to an escape sequence
+    color = color_seq(color, mode=mode)
+
+    colored = f"{color}{msg}{CLEAR}"
+
+    return colored
+
 # Return a cursor moving escape sequence (to be printed)
 def cursor_move(pos: Pos):
-    escape = get_escape()
+    ESC = get_escape()
 
     line = pos[1] + 2  # Add 1 since 0th is border
     column = pos[0] + 2  # Also add 1
 
-    return f"{escape}[{line};{column}H"
+    return f"{ESC}[{line};{column}H"
