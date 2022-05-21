@@ -22,11 +22,12 @@ WHITE = "#ffffff"
 ## Classes
 # A base class for all other shapes
 class BaseRect:
-    def __init__(self, chars: tuple[tuple[str]], color=WHITE):
+    def __init__(self, chars: tuple[tuple[str]], pos: Pos = (0, 0), color=WHITE):
         assert max(map(len, chars)) == min(map(len, chars)), "All columns should be the same size"
 
         self.rect = chars
         self.color = color
+        self.pos = pos
 
 
     def __str__(self):
@@ -50,7 +51,10 @@ color = {self.color}
     def set_pixel(self, pos: Pos, char: str):
         self.rect[pos[1]][pos[0]] = paint(char, self.color)
 
-    def draw(self, surface, pos: Pos = (0, 0)):
+    def move(self, pos: Pos):
+        self.pos = pos
+
+    def draw(self, surface: Canvas):
         assert not any(
                 map(
                     lambda l: l[0] > l[1],
@@ -61,16 +65,17 @@ color = {self.color}
         for y, line in enumerate(self.rect):
             for x, char in enumerate(line):
                 if char != paint(" ", self.color):  # " " imitates alpha/transparent pixels
-                    surface.set((x + pos[0], y + pos[1]), char)
+                    surface.set((x + self.pos[0], y + self.pos[1]), char)
 
 
 # A rectangular area filled with a single char
 class FilledRect(BaseRect):
-    def __init__(self, size: Size, char: str = BLOCK_CURSOR, color=WHITE):
+    def __init__(self, size: Size, char: str = BLOCK_CURSOR, pos: Pos = (0, 0), color=WHITE):
         assert len(char) == 1, "You can pass only a single char"
 
         self.char = paint(char, color)
         self.color = color
+        self.pos = pos
 
         self.rect = list(list(self.char for _ in range(size[0])) for _ in range(size[1]))
 
@@ -84,7 +89,44 @@ class Line(BaseRect):
         self.color = color
         self.rect_size = tuple(map(max, ((start[0], end[0]), (start[1], end[1]))))
 
-        exec(f"self.rect = self._construct_{algorithm}(start, end, char)")
+        self.start, self.end, self.pos = self.__simplify(start, end)
+
+        exec(f"self.rect = self._construct_{algorithm}(self.start, self.end, self.char)")
+
+    # Simplify the coordinates (And return the offset)
+    # TODO: Rewrite to accept `*coords`
+    @staticmethod
+    def __simplify(start: Pos, end: Pos) -> tuple[Pos, Pos, Pos]:
+        # start = (3, 1)
+        # end   = (6, 4)
+        # | simplify
+        # start = (0, 0)
+        # end   = (3, 3)
+
+        # WARNING: Entering functional programming realm
+
+        # Zip the coordinates (Split by directions)
+        zipped = tuple(zip(start, end))
+
+        # Calculate offset for each
+        offset = tuple(map(min, zipped))
+
+        # Subtract mininal cooedinate from each direction
+        simplified = tuple(map(
+            lambda a: tuple(map(
+                lambda b: b[1] - offset[b[0]],  # FIXME
+                enumerate(a)
+                )),
+            (start, end)
+        ))
+
+        # Split the coords into positions again
+        # (x, x), (y, y) ->
+        # -> (x, y), (x, y)
+        # start, end = tuple(zip(*simplified))
+        start, end = simplified
+
+        return start, end, offset
 
     # A yet another implementation...
     def _construct_custom(self, start: Pos, end: Pos, char: str):
