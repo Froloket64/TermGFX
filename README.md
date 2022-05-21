@@ -4,12 +4,13 @@ TermGFX
 A yet another terminal graphics library written in Python.
 
 # Why tho?
-The idea behind this project is to allow simple yet extensible graphics processing in the terminal. I'm a videogames enjoyer and I have used libraries such as PyGame, so it was an inspiration for me to write my own graphics lib. I decided using a terminal/TTY as canvas, because I spend a lot of time sitting at it as a Linux user. Moreover, it felt like something a bit more unique ~~(even though there were a bunch of such project already, shh)~~
+The idea behind this project is to allow simple yet extensible graphics processing in the terminal. I'm a videogames enjoyer and I have used libraries such as PyGame, so it was an inspiration for me to write my own graphics lib. I decided to use a terminal/TTY as canvas, because I spend a lot of time sitting at it as a Linux user. Moreover, it felt like something a bit more unique ~~(even though there were a bunch of such project already, shh)~~
 
 # What it can
 Draw
 + **Dots** 
 + **Lines**
++ **Colors**
 
 # What's planned
 + **Cirle** shapes
@@ -73,4 +74,4 @@ rect.draw(canvas)
 canvas.draw()
 ```
 
-_**Tip:** shapes usually have a `draw` method that allows for easy drawing on a surface_
+_**Tip:** shapes usually have a `draw(surface: engine.Canvas)` method that allows for easy drawing on a surface_
